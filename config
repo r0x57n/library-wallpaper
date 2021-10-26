@@ -1,0 +1,15 @@
+[google-books]
+api_key = ""
+user_id = 0
+shelve_id = 4                   # the id for the "have read" shelve
+max_results = 40                # maximum is 40 for the API
+
+[covers]
+y_offset = 150                  # offset placement of covers on the wallpaper
+x_offset = 150
+opacity = 150                   # opacity of the covers
+width = 400                     # the width of the covers, height is calculated from this
+
+[file]
+wallpaper = "wallpaper.jpg"     # the wallpaper to put covers on
+output = "wallpaper_new.png"    # output filename
