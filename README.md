@@ -6,7 +6,7 @@ A simple script that downloads covers from a personal [google books](https://boo
 
 ## Configuration
 
-See the file [./config](/blob/main/config) included in the repository for all available options, commented options gives sane defaults.
+See the file [config](config) included in the repository for all available options, commented options gives sane defaults.
 
 ## Requirements
 
