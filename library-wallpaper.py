@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 from os.path import isfile
+from os import remove
 import requests
 import random
 import io
 import sys
 import toml
 from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
 
 DEFAULT_CONF_PATH = "./config"
 
@@ -27,6 +30,15 @@ class Config:
     x_offset = 150
     opacity = 150
     cover_width = 300
+
+    # unknown cover
+    background_image = None
+    background_color = (0, 0, 0)
+    font = ""
+    font_color = (0, 0, 0)
+    font_size = 12
+    padding_top = 0
+    padding_left = 0
 
     # file
     wallpaper = "wallpaper.jpg"
@@ -56,6 +68,17 @@ class Config:
             self.x_offset = covers['x_offset'] if 'x_offset' in covers else self.x_offset
             self.opacity = covers['opacity'] if 'opacity' in covers else self.opacity
             self.cover_width = covers['width'] if 'width' in covers else self.cover_width
+
+        if 'unknown-cover' in config:
+            unknown = config['unknown-cover'] if 'unknown-cover' in config else []
+
+            self.background_color = unknown['background_color'] if 'background_color' in unknown else self.background_color
+            self.background_image = unknown['background_image'] if 'background_image' in unknown else self.background_image
+            self.font = unknown['font'] if 'font' in unknown else self.font
+            self.font_size = unknown['font_size'] if 'font_size' in unknown else self.font_size
+            self.font_color = unknown['font_color'] if 'font_color' in unknown else self.font_color
+            self.padding_top = unknown['padding_top'] if 'padding_top' in unknown else self.padding_top
+            self.padding_left = unknown['padding_left'] if 'padding_left' in unknown else self.padding_left
 
         if 'file' in config:
             covers = config['file'] if 'file' in config else []
@@ -127,13 +150,34 @@ class WallpaperMaker:
                 thumb_url = book['volumeInfo']['imageLinks']['thumbnail']
                 img = requests.get(thumb_url)
                 covers.append(img.content)
+            else:
+                font = ImageFont.truetype(self.config.font, self.config.font_size)
+                title = book['volumeInfo']['title'].replace(" ", "\n")
+                output = io.BytesIO()
+                size = (110, 170)
+
+                if not self.config.background_image:
+                    with Image.new('RGBA', size) as img:
+                        img.paste(self.config.background_color, [0, 0, img.width, img.height])
+                        draw = ImageDraw.Draw(img)
+                        draw.multiline_text((self.config.padding_left, self.config.padding_top), title, font=font, fill=self.config.font_color)
+                        img.save(output, format="png")
+                else:
+                    with Image.open(self.config.background_image, 'r', None) as img:
+                        draw = ImageDraw.Draw(img)
+                        draw.multiline_text((self.config.padding_left, self.config.padding_top), title, font=font, fill=self.config.font_color)
+                        img.save(output, format="png")
+
+                covers.append(output.getvalue())
 
         return covers
 
-    def create_wallpaper(self, covers, wallpaper):
+    def paste_covers(self, wallpaper):
         """
-        Pastes the book covers onto the wallpaper.
+        Pastes the book covers onto the wallpaper and return it.
         """
+
+        covers = self.get_covers()
 
         x = 0 + self.config.x_offset
         y = 0 + self.config.y_offset
@@ -164,30 +208,12 @@ class WallpaperMaker:
                 if (x + img.width) > self.config.max_width:
                     space_left = False
 
-            # paste the book cover to the wallpaper
-            wallpaper.paste(img, (x, y), img)
-            y += img.height
+            if space_left:
+                # paste the book cover to the wallpaper
+                wallpaper.paste(img, (x, y), img)
+                y += img.height
 
-    def create(self):
-        """
-        Performs the methods for creating the wallpaper and saves it into the output file.
-        """
-
-        covers = self.get_covers()
-
-        current_wallpaper = Image.open(self.config.wallpaper)
-
-        wallpaper = Image.new('RGBA', current_wallpaper.size)
-        wallpaper.paste(current_wallpaper)
-
-        current_wallpaper.close()
-
-        self.config.max_width = wallpaper.width
-        self.config.max_height = wallpaper.height
-
-        self.create_wallpaper(covers, wallpaper)
-
-        wallpaper.save(self.config.output)
+        return wallpaper
 
 def main():
     """
@@ -207,8 +233,20 @@ def main():
         print("Bad config given.")
         return 0
 
+    wallpaper = None
+
+    with Image.open(config.wallpaper) as current:
+        wallpaper = Image.new('RGBA', current.size)
+        wallpaper.paste(current)
+
+    config.max_width = wallpaper.width
+    config.max_height = wallpaper.height
+
     maker = WallpaperMaker(config)
-    maker.create()
+    wallpaper = maker.paste_covers(wallpaper)
+
+    wallpaper.save(config.output)
+    wallpaper.close()
 
     return 1
 

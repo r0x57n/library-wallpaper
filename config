@@ -1,14 +1,28 @@
+# Sane defaults usually exists, if not it's said in the comment.
+
+# google boks api settings
 [google-books]
-api_key = ""
-user_id = 0
+api_key = ""                    # must have
+user_id = 0                     # must have
 shelve_id = 4                   # the id for the "have read" shelve
 max_results = 40                # maximum is 40 for the API
 
+# settings for existing covers
 [covers]
 y_offset = 150                  # offset placement of covers on the wallpaper
 x_offset = 150
 opacity = 150                   # opacity of the covers
 width = 400                     # the width of the covers, height is calculated from this
+
+# settings for covers where the book didn't have one specified
+[unknown-cover]
+#background_image = "./path/to/default-cover.png" # the image to use as cover
+background_color = "black"      # the color to use as cover
+font = "FiraMono-Regular.ttf"   # must have, the font to use to draw the title on the cover
+font_color = "white"
+font_size = 30
+padding_top = 60
+padding_left = 60
 
 [file]
 wallpaper = "wallpaper.jpg"     # the wallpaper to put covers on
